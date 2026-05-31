@@ -1,0 +1,53 @@
+.bgGrid {
+  position: absolute;
+  inset: 0;
+  z-index: -10;
+  pointer-events: none;
+  background: #ffffff;
+}
+
+.bgGrid::before,
+.bgGrid::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  transform: translateZ(0);
+}
+
+.bgGrid::before {
+  background-image:
+    repeating-linear-gradient(90deg, rgba(20,160,255,0.9) 0 1px, rgba(255,255,255,0) 1px 100%),
+    repeating-linear-gradient(0deg, rgba(20,160,255,0.9) 0 1px, rgba(255,255,255,0) 1px 100%);
+  background-size: 56px 56px, 56px 56px;
+  opacity: 0.10;
+  mix-blend-mode: normal;
+  will-change: opacity;
+}
+
+.bgGrid::after {
+  background-image:
+    repeating-linear-gradient(90deg, rgba(20,160,255,0.75) 0 1px, rgba(255,255,255,0) 1px 100%),
+    repeating-linear-gradient(0deg, rgba(20,160,255,0.75) 0 1px, rgba(255,255,255,0) 1px 100%);
+  background-size: 56px 56px, 56px 56px;
+  filter: blur(4px);
+  opacity: 0.08;
+  animation: grid-pulse 5s ease-in-out infinite;
+  transform-origin: center;
+}
+
+.bgGrid::before { background-position: 0 0, 0 0; }
+.bgGrid::after  { background-position: 24px 24px, 24px 24px; }
+
+@keyframes grid-pulse {
+  0%   { opacity: 0.06; transform: scale(1); }
+  50%  { opacity: 0.22; transform: scale(1.002); }
+  100% { opacity: 0.06; transform: scale(1); }
+}
+
+@media (max-width: 720px) {
+  .bgGrid::before,
+  .bgGrid::after {
+    background-size: 36px 36px, 36px 36px;
+  }
+}
