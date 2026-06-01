@@ -20,11 +20,13 @@ update tmp_normalized set base_slug = regexp_replace(base_slug, '-+', '-', 'g');
 
 -- Create final slug with suffix when duplicates occur
 create temporary table tmp_final as
+create temporary table tmp_final as
 select id,
        case when rn = 1 then base_slug else base_slug || '-' || (rn::text) end as new_slug,
        slug as old_slug
 from (
-  select id, base_slug, row_number() over (partition by base_slug order by id) as rn
+  -- include `slug` in the inner projection so the outer select can reference it
+  select id, base_slug, slug, row_number() over (partition by base_slug order by id) as rn
   from tmp_normalized
 ) s;
 
