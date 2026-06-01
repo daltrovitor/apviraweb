@@ -222,12 +222,57 @@ export default function Dashboard() {
                     <p className="text-sm uppercase tracking-[0.28em] text-cyan-600">{presentation.title}</p>
                     <p className="mt-3 text-sm text-slate-500">Slug: <span className="font-semibold text-slate-900">{presentation.slug}</span></p>
                     <p className="mt-2 text-xs uppercase tracking-[0.2em] text-slate-400">{new Date(presentation.created_at).toLocaleString('pt-BR')}</p>
-                    <a
-                      href={`/presentations/${presentation.slug}`}
-                      className="mt-4 inline-flex text-sm font-semibold text-cyan-600 transition hover:text-cyan-500"
-                    >
-                      Abrir apresentação
-                    </a>
+                    <div className="mt-4 flex gap-3">
+                      <a
+                        href={`/presentations/${presentation.slug}`}
+                        className="inline-flex text-sm font-semibold text-cyan-600 transition hover:text-cyan-500"
+                      >
+                        Abrir apresentação
+                      </a>
+
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          // confirm delete
+                          if (!confirm('Tem certeza que deseja excluir esta apresentação? Esta ação não pode ser desfeita.')) return
+                          setLoading(true)
+                          setStatus('Removendo apresentação...')
+
+                          try {
+                            // attempt to remove storage file first
+                            try {
+                              await supabase!.storage.from('presentations').remove([presentation.storage_path])
+                            } catch (e) {
+                              // ignore storage deletion failures, proceed to remove db row
+                              // eslint-disable-next-line no-console
+                              console.warn('Storage removal failed:', e)
+                            }
+
+                            const { error: deleteError } = await supabase!.from('presentations').delete().eq('id', presentation.id)
+                            if (deleteError) {
+                              // eslint-disable-next-line no-console
+                              console.error('Delete error:', deleteError)
+                              setStatus('Falha ao excluir apresentação.')
+                              setLoading(false)
+                              return
+                            }
+
+                            // remove from local state
+                            setPresentations((prev) => prev.filter((p) => p.id !== presentation.id))
+                            setStatus('Apresentação removida com sucesso.')
+                          } catch (err) {
+                            // eslint-disable-next-line no-console
+                            console.error('Failed to delete presentation:', err)
+                            setStatus('Erro ao excluir apresentação.')
+                          } finally {
+                            setLoading(false)
+                          }
+                        }}
+                        className="inline-flex items-center justify-center rounded-3xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-100"
+                      >
+                        Excluir
+                      </button>
+                    </div>
                   </article>
                 ))}
               </div>
