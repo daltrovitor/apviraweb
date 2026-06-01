@@ -20,7 +20,6 @@ update tmp_normalized set base_slug = regexp_replace(base_slug, '-+', '-', 'g');
 
 -- Create final slug with suffix when duplicates occur
 create temporary table tmp_final as
-create temporary table tmp_final as
 select id,
        case when rn = 1 then base_slug else base_slug || '-' || (rn::text) end as new_slug,
        slug as old_slug

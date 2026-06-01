@@ -86,29 +86,44 @@ export default function Dashboard() {
     }
 
     // Create FormData to send PDF and metadata in a single request to the API
-    const formData = new FormData()
-    formData.append('file', pdfFile)
-    formData.append('user_id', user.id)
-    formData.append('title', title.trim())
-    formData.append('slug', slug)
-
+    // Upload file directly to Supabase Storage from the browser to avoid
+    // sending large multipart bodies through the Next.js API route which
+    // can hit platform limits (Content Too Large / 413).
     try {
-      const res = await fetch('/api/presentations', {
-        method: 'POST',
-        body: formData
+      const storagePath = `${user.id}/${slug}.pdf`
+
+      // upload file using anon client; this requires the user to be
+      // authenticated (we retrieved session earlier). This avoids the
+      // Next.js route receiving the raw file.
+      const { error: uploadError } = await supabase!.storage.from('presentations').upload(storagePath, pdfFile, { upsert: true })
+
+      if (uploadError) {
+        // eslint-disable-next-line no-console
+        console.error('Storage upload error:', uploadError)
+        setStatus('Erro ao enviar o arquivo para o storage.')
+        setLoading(false)
+        return
+      }
+
+      // Insert metadata row into `presentations`. RLS allows this for the
+      // authenticated user (policies require auth.uid() = user_id).
+      const { error: insertError } = await supabase!.from('presentations').insert({
+        user_id: user.id,
+        title: title.trim(),
+        slug,
+        storage_path: storagePath
       })
 
-      const result = await res.json()
-      if (!res.ok) {
+      if (insertError) {
         // eslint-disable-next-line no-console
-        console.error('Server upload/insert error:', result)
-        setStatus(result.error || 'Erro ao enviar a apresentação para o servidor.')
+        console.error('Database insert error:', insertError)
+        setStatus('Erro ao salvar metadados da apresentação.')
         setLoading(false)
         return
       }
     } catch (err) {
       // eslint-disable-next-line no-console
-      console.error('Failed to call server upload/insert API:', err)
+      console.error('Upload/insert flow failed:', err)
       setStatus('Erro ao salvar os dados da apresentação no servidor.')
       setLoading(false)
       return
