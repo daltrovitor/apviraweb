@@ -23,13 +23,25 @@ export async function GET(request: Request, context: any) {
       return NextResponse.json({ error: 'Missing slug' }, { status: 400 })
     }
 
+    // eslint-disable-next-line no-console
+    console.log('[api/public/presentation] received slug:', slug)
+
     const { data, error } = await supabaseAdmin
       .from('presentations')
       .select('id, title, slug, storage_path')
       .eq('slug', slug)
-      .single()
+      .maybeSingle()
 
-    if (error || !data) {
+    // eslint-disable-next-line no-console
+    console.log('[api/public/presentation] db response:', { data, error })
+
+    if (error) {
+      // eslint-disable-next-line no-console
+      console.error('[api/public/presentation] database error:', error)
+      return NextResponse.json({ error: error.message || error }, { status: 500 })
+    }
+
+    if (!data) {
       return NextResponse.json({ error: 'Presentation not found' }, { status: 404 })
     }
 

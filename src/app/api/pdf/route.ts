@@ -20,13 +20,28 @@ export async function GET(request: Request) {
 
   try {
     // Fetch the presentation storage path using service role client to bypass db RLS
+    // Use maybeSingle() to gracefully handle zero rows and avoid throwing
+    // when no record is found.
+    // Log slug and requested select for debugging.
+    // eslint-disable-next-line no-console
+    console.log('[api/pdf] fetching presentation for slug:', slug)
+
     const { data: presentation, error: dbError } = await supabaseAdmin
       .from('presentations')
       .select('storage_path')
       .eq('slug', slug)
-      .single()
+      .maybeSingle()
 
-    if (dbError || !presentation) {
+    // eslint-disable-next-line no-console
+    console.log('[api/pdf] db response - presentation:', presentation, 'error:', dbError)
+
+    if (dbError) {
+      // eslint-disable-next-line no-console
+      console.error('[api/pdf] database error fetching presentation:', dbError)
+      return new Response('Internal server error', { status: 500 })
+    }
+
+    if (!presentation) {
       return new Response('Presentation not found', { status: 404 })
     }
 

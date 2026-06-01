@@ -8,9 +8,12 @@ export type Presentation = {
 const STORAGE_KEY = 'viraweb-presentations'
 
 export function createSlug(title: string) {
+  // Normalize Unicode to remove diacritics (e.g. ã -> a, ç -> c)
   return title
-    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // remove combining diacritical marks
     .toLowerCase()
+    .trim()
     .replace(/[^a-z0-9\s-]/g, '')
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-')
