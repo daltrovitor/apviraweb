@@ -33,11 +33,19 @@ export async function GET(request: Request, context: any) {
       return NextResponse.json({ error: 'Presentation not found' }, { status: 404 })
     }
 
-    const publicUrl = supabaseAdmin.storage
+    // Generate a signed URL valid for 1 hour to avoid CORS / public bucket issues
+    const expiresIn = 60 * 60 // 1 hour
+    const { data: signedData, error: signedError } = await supabaseAdmin.storage
       .from('presentations')
-      .getPublicUrl(data.storage_path).data.publicUrl
+      .createSignedUrl(data.storage_path, expiresIn)
 
-    return NextResponse.json({ data: { ...data, publicUrl } }, { status: 200 })
+    if (signedError || !signedData) {
+      // Fallback: try public URL if available
+      const publicUrl = supabaseAdmin.storage.from('presentations').getPublicUrl(data.storage_path).data?.publicUrl
+      return NextResponse.json({ data: { ...data, publicUrl } }, { status: 200 })
+    }
+
+    return NextResponse.json({ data: { ...data, signedUrl: signedData.signedUrl } }, { status: 200 })
   } catch (err: any) {
     // eslint-disable-next-line no-console
     console.error('API /api/public/presentation error:', err)
