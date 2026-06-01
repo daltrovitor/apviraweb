@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-export async function GET(request: Request, { params }: { params: { slug: string } }) {
+export async function GET(request: Request, context: any) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
@@ -12,7 +12,12 @@ export async function GET(request: Request, { params }: { params: { slug: string
   const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey)
 
   try {
-    const slug = params.slug
+    // context.params can be an object or a Promise depending on Next.js types.
+    let slug: string | undefined
+
+    const maybeParams = context?.params
+    const resolvedParams = maybeParams instanceof Promise ? await maybeParams : maybeParams
+    slug = resolvedParams?.slug
 
     if (!slug) {
       return NextResponse.json({ error: 'Missing slug' }, { status: 400 })
